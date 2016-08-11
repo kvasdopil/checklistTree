@@ -6,21 +6,42 @@ import ReactDOM from 'react-dom';
 import {observer} from 'mobx-react';
 
 import Model from './model';
+import {link, Checkbox, Input} from './link';
 
 let _renders = 0;
 
-const App = observer(props =>
-  <div>
-    <div>Renders count: { ++_renders }
-      <button onClick={() => props.store.add() }>
-        Add children
-      </button>
+@observer
+class App extends React.Component {
+  componentWillMount() {
+
+    try {
+      this.props.store.load(
+        JSON.parse(localStorage.getItem('checklist') || "{}")
+      );
+    } catch(e) {}
+
+    window.onunload = () => {
+      localStorage.setItem('checklist', JSON.stringify(
+        this.props.store.save()
+      ));
+    }
+  }
+
+  render() {
+    const {store} = this.props;
+
+    return <div>
+      <div>Renders count: { ++_renders }
+        <button onClick={() => store.add() }>
+          Add children
+        </button>
+      </div>
+      <div className='children'>
+        <List items={store.items} />
+      </div>
     </div>
-    <div className='children'>
-      <List items={props.store.items} />
-    </div>
-  </div>
-)
+  }
+}
 
 const List = observer(props =>
   <div className='children'>
@@ -48,19 +69,6 @@ const Item = observer(props => {
     <List items={model.items} />
   </div>
 })
-
-const link = (target, name) => ({
-  set: (val) => target[name] = val,
-  get: () => target[name]
-})
-
-const Checkbox = observer(props =>
-  <input type='checkbox' checked={props.link.get()} onChange={a => props.link.set(a.target.checked)} />
-)
-
-const Input = observer(props =>
-  <input value={props.link.get()} onChange={a => props.link.set(a.target.value)} />
-)
 
 const store = new Model();
 
